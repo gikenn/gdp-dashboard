@@ -1,19 +1,27 @@
-# :earth_americas: GDP dashboard template
+# 🌎 GDP Dashboard
 
-A simple Streamlit app showing the GDP of different countries in the world.
+A responsive dashboard built with React and Vite to browse and compare historical World Bank GDP data across countries and years.
 
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://gdp-dashboard-template.streamlit.app/)
+Migrated from the original Streamlit application to Node.js / React + Vite for Google AI Studio.
 
-### How to run it on your own machine
+### Features
 
-1. Install the requirements
+- **Historical World Bank GDP Data (1960–2022)**: Interactive data exploring global economic growth.
+- **Year Range Filter**: Select any historical range between 1960 and 2022.
+- **Country Multiselect**: Search and select any countries by name or 3-letter code, with defaults (DEU, FRA, GBR, BRA, MEX, JPN).
+- **Interactive Line Chart**: Visualize GDP trajectories over time with formatted tooltips and color-coded series.
+- **GDP Metric Cards**: Summary cards for each selected country displaying GDP in the target year and growth multiple compared to the baseline year.
 
-   ```
-   $ pip install -r requirements.txt
-   ```
+### Development
 
-2. Run the app
+```bash
+npm install
+npm run dev
+```
 
-   ```
-   $ streamlit run streamlit_app.py
-   ```
+### Build
+
+```bash
+npm run build
+```
+

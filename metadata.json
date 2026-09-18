@@ -1,0 +1,8 @@
+{
+  "name": "GDP Dashboard",
+  "description": "Browse and compare historical World Bank GDP data across countries and years with interactive charts and metrics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
