@@ -1,41 +1,82 @@
 import React from 'react';
-import { Globe } from 'lucide-react';
+import { ScanlineWaves } from './ScanlineWaves';
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  onResetView?: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onResetView }) => {
   return (
     <header className="mb-8" id="dashboard-header">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#e7e0d3]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-100/80 border border-amber-300 flex items-center justify-center text-amber-800 shadow-xs">
-            <Globe className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-stone-900">
-                World GDP Navigator
-              </h1>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-200/60 text-amber-900 border border-amber-300/50">
-                World Bank Edition
-              </span>
-            </div>
-            <p className="text-xs sm:text-sm text-stone-600 mt-0.5">
-              Historical trajectories &amp; future growth prospects (1960 — 2028f)
-            </p>
-          </div>
-        </div>
+      <div className="relative overflow-hidden rounded-2xl border-[10px] border-[#e63946] cp-header-backdrop shadow-sm">
+        {/* Stipple grain texture from CodePen */}
+        <div className="absolute inset-0 z-10 cp-grain-overlay" aria-hidden="true" />
 
-        <div className="flex items-center gap-2 text-xs text-stone-600 bg-white/80 border border-[#e7e0d3] px-3.5 py-1.5 rounded-full self-start sm:self-auto shadow-2xs">
-          <span>Source:</span>
+        {/* Stepped scanline ocean horizon at bottom of header */}
+        <ScanlineWaves variant="header" className="absolute inset-x-0 bottom-0 h-16 sm:h-20 z-[5]" />
+
+        {/* Top Bar Contract: [Brand title, one line] — [4 nav links] — [1 primary action] */}
+        <div className="relative z-20 flex flex-wrap items-center justify-between gap-4 sm:gap-8 px-5 sm:px-8 pt-5 pb-14 sm:pb-16">
+          {/* Zone 1: Single text element wordmark */}
           <a
-            href="https://data.worldbank.org/"
-            target="_blank"
-            rel="noreferrer noopener"
-            className="text-amber-800 font-semibold hover:underline"
+            href="#app-root"
+            className="font-display text-xl sm:text-2xl font-extrabold tracking-tight text-[#1d3557] whitespace-nowrap shrink-0 bg-[#f1faee]/85 px-3 py-1 rounded-lg backdrop-blur-[2px]"
           >
-            World Bank Open Data
+            World GDP Navigator
           </a>
-          <span className="text-stone-300">•</span>
-          <span>GEP June 2026</span>
+
+          {/* Zone 2: Clean single-line text navigation links */}
+          <nav
+            aria-label="Primary sections"
+            className="hidden md:flex items-center gap-6 text-sm font-semibold text-[#1d3557] bg-[#f1faee]/80 px-4 py-1.5 rounded-lg backdrop-blur-[2px]"
+          >
+            <a
+              href="#world-summary-hero"
+              className="hover:text-[#e63946] hover:underline underline-offset-4 transition-colors whitespace-nowrap shrink-0"
+            >
+              Globe
+            </a>
+            <a
+              href="#filters-container"
+              className="hover:text-[#e63946] hover:underline underline-offset-4 transition-colors whitespace-nowrap shrink-0"
+            >
+              Filters
+            </a>
+            <a
+              href="#gdp-chart-section"
+              className="hover:text-[#e63946] hover:underline underline-offset-4 transition-colors whitespace-nowrap shrink-0"
+            >
+              Chart
+            </a>
+            <a
+              href="#world-bank-outlook-section"
+              className="hover:text-[#e63946] hover:underline underline-offset-4 transition-colors whitespace-nowrap shrink-0"
+            >
+              Projections
+            </a>
+          </nav>
+
+          {/* Zone 3: 1 primary action */}
+          <div className="flex items-center gap-3 shrink-0">
+            {onResetView ? (
+              <button
+                type="button"
+                onClick={onResetView}
+                className="px-4 py-2 text-xs font-bold tracking-wide text-[#f1faee] bg-[#1d3557] hover:bg-[#e63946] rounded-lg transition-colors whitespace-nowrap shrink-0 shadow-xs cursor-pointer"
+              >
+                Reset View
+              </button>
+            ) : (
+              <a
+                href="https://data.worldbank.org/"
+                target="_blank"
+                rel="noreferrer noopener"
+                className="px-4 py-2 text-xs font-bold tracking-wide text-[#f1faee] bg-[#1d3557] hover:bg-[#e63946] rounded-lg transition-colors whitespace-nowrap shrink-0 shadow-xs"
+              >
+                World Bank Data
+              </a>
+            )}
+          </div>
         </div>
       </div>
     </header>

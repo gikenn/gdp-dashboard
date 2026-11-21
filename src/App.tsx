@@ -11,6 +11,7 @@ import {
 } from './data/gdpService';
 import { ChartMode } from './types';
 import { Header } from './components/Header';
+import { Footer } from './components/Footer';
 import { AnimatedGlobe } from './components/AnimatedGlobe';
 import { WorldSummaryHero } from './components/WorldSummaryHero';
 import { Filters } from './components/Filters';
@@ -65,10 +66,19 @@ export default function App() {
     }
   };
 
+  const handleResetView = () => {
+    setFromYear(MIN_YEAR);
+    setToYear(MAX_YEAR);
+    setSelectedCountries(DEFAULT_SELECTED_COUNTRIES);
+    setChartMode('raw');
+    setInspectedCountryCode(null);
+    setIsSlidingPanelOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-[#faf7f2] text-[#1c1917] p-4 sm:p-8 selection:bg-amber-200 selection:text-amber-950" id="app-root">
       <div className="max-w-7xl mx-auto">
-        <Header />
+        <Header onResetView={handleResetView} />
 
         {/* Hero Section: World Total, Centered Animated Globe, Top Holders & World Bank Potential */}
         <WorldSummaryHero
@@ -127,6 +137,8 @@ export default function App() {
           fromYear={fromYear}
           toYear={toYear}
         />
+
+        <Footer />
       </div>
     </div>
   );
