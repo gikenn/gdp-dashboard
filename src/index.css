@@ -9,19 +9,26 @@
   --baltic-blue: #31587a;
   --oxford-navy: #1d3557;
 
+  /* Liquid Glass Tokens */
+  --lg-bg-color: rgba(255, 255, 255, 0.14);
+  --lg-highlight: rgba(255, 255, 255, 0.55);
+  --lg-text: #ffffff;
+  --lg-red: #fb4268;
+  --lg-grey: #e2e8f0;
+
   --font-display: "Bricolage Grotesque", sans-serif;
   --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   font-family: var(--font-sans);
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 body {
   margin: 0;
   padding: 0;
-  background-color: #faf7f2;
-  color: #1c1917;
+  background-color: #000000;
+  color: #f8fafc;
   min-height: 100vh;
   font-family: var(--font-sans);
 }
@@ -38,6 +45,167 @@ h4,
 .tabular-nums {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+}
+
+/* =========================================================
+   Aurora Background Layer (sits behind Currency Matrix Rain)
+   ========================================================= */
+.aurora {
+  background: #000000;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.aurora::before,
+.aurora::after {
+  content: "";
+  display: block;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  border-radius: 100%;
+  opacity: 0.22;
+}
+
+.aurora::before {
+  box-shadow: 0 0 35vmax 35vmax red;
+  animation:
+    hue 5s 0s linear infinite,
+    move1 10s 0s linear infinite;
+}
+
+.aurora::after {
+  box-shadow: 0 0 35vmax 35vmax cyan;
+  animation:
+    hue 10s 0s linear infinite,
+    move2 20s 0s linear infinite;
+}
+
+@keyframes hue {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  100% {
+    filter: hue-rotate(360deg);
+  }
+}
+
+@keyframes move1 {
+  0% {
+    top: 0vh;
+    left: 50vw;
+  }
+  25% {
+    left: 0vw;
+  }
+  50% {
+    top: 100vh;
+  }
+  75% {
+    left: 100vw;
+  }
+  100% {
+    top: 0vh;
+    left: 50vw;
+  }
+}
+
+@keyframes move2 {
+  0% {
+    top: 50vh;
+    left: 100vw;
+  }
+  25% {
+    top: 100vh;
+  }
+  50% {
+    left: 0vw;
+  }
+  75% {
+    top: 0vh;
+  }
+  100% {
+    top: 50vh;
+    left: 100vw;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora::before,
+  .aurora::after {
+    animation: none;
+    top: 35vh;
+    left: 35vw;
+  }
+}
+
+/* =========================================================
+   Liquid Glass Container Architecture
+   ========================================================= */
+@layer components {
+  .glass-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: rgba(10, 14, 24, 0.32);
+    border-radius: 1.5rem;
+    overflow: hidden;
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.38),
+      0 2px 6px rgba(0, 0, 0, 0.25);
+    color: var(--lg-text);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .glass-container--rounded {
+    border-radius: 2rem;
+  }
+
+  .glass-filter,
+  .glass-overlay,
+  .glass-specular {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .glass-filter {
+    z-index: 0;
+    backdrop-filter: blur(12px) saturate(130%) brightness(1.08);
+    -webkit-backdrop-filter: blur(12px) saturate(130%) brightness(1.08);
+    filter: url(#lensFilter) saturate(120%) brightness(1.1);
+  }
+
+  .glass-overlay {
+    z-index: 1;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.18) 0%,
+      rgba(255, 255, 255, 0.08) 55%,
+      rgba(255, 255, 255, 0.12) 100%
+    );
+  }
+
+  .glass-specular {
+    z-index: 2;
+    box-shadow:
+      inset 1px 1px 0 rgba(255, 255, 255, 0.65),
+      inset 0 0 8px rgba(255, 255, 255, 0.22);
+  }
+
+  .glass-content {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    width: 100%;
+  }
 }
 
 /* CodePen Coastal Scanline Wave Display Styles */

@@ -12,6 +12,9 @@ import {
 import { ChartMode } from './types';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
+import { AuroraBackground } from './components/AuroraBackground';
+import { CurrencyMatrixRain } from './components/CurrencyMatrixRain';
+import { LensSvgFilter } from './components/GlassBox';
 import { AnimatedGlobe } from './components/AnimatedGlobe';
 import { WorldSummaryHero } from './components/WorldSummaryHero';
 import { Filters } from './components/Filters';
@@ -76,8 +79,18 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf7f2] text-[#1c1917] p-4 sm:p-8 selection:bg-amber-200 selection:text-amber-950" id="app-root">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-black text-slate-100 p-4 sm:p-8 selection:bg-amber-300 selection:text-[#1d3557] relative" id="app-root">
+      {/* Global SVG displacement filter for Liquid Glass containers */}
+      <LensSvgFilter />
+
+      {/* Layer 0: Text-free animated Aurora background */}
+      <AuroraBackground />
+
+      {/* Layer 1: World Currency Matrix shower running cleanly above Aurora */}
+      <CurrencyMatrixRain />
+
+      {/* Layer 10: Main Dashboard Content */}
+      <div className="max-w-7xl mx-auto relative z-10">
         <Header onResetView={handleResetView} />
 
         {/* Hero Section: World Total, Centered Animated Globe, Top Holders & World Bank Potential */}

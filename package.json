@@ -9,6 +9,8 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@amcharts/amcharts4": "^4.10.40",
+    "@amcharts/amcharts4-geodata": "^4.1.32",
     "lucide-react": "^1.16.0",
     "papaparse": "^5.5.3",
     "react": "^18.3.1",

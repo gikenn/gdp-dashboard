@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { CountryData } from '../types';
 import { MIN_YEAR, MAX_YEAR, DEFAULT_SELECTED_COUNTRIES } from '../data/gdpService';
 import { AlertTriangle, ChevronDown, X, Search, RotateCcw } from 'lucide-react';
+import { GlassBox } from './GlassBox';
 
 interface FiltersProps {
   allCountries: CountryData[];
@@ -61,19 +62,19 @@ export const Filters: React.FC<FiltersProps> = ({
   return (
     <div className="space-y-5 mb-8" id="filters-container">
       {/* Year Range Slider Section */}
-      <div className="bg-white border border-[#e7e0d3] rounded-2xl p-5 shadow-xs" id="year-filter-card">
+      <GlassBox id="year-filter-card" contentClassName="p-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-          <label className="text-sm font-semibold text-stone-800" htmlFor="from-year-slider">
+          <label className="text-sm font-semibold text-white" htmlFor="from-year-slider">
             Historical Horizon ({MIN_YEAR} — {MAX_YEAR})
           </label>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold text-amber-900 bg-amber-100/80 px-3 py-1 rounded-full border border-amber-200">
+            <span className="text-xs font-mono font-bold text-amber-300">
               {fromYear} — {toYear} ({toYear - fromYear} yrs)
             </span>
             <button
               type="button"
               onClick={() => onYearRangeChange(MIN_YEAR, MAX_YEAR)}
-              className="text-xs text-stone-500 hover:text-stone-800 px-2.5 py-1 rounded-full hover:bg-stone-100 transition-colors border border-transparent hover:border-stone-200"
+              className="text-xs text-slate-200 hover:text-white px-2.5 py-1 rounded-lg hover:bg-white/15 transition-colors border border-white/20 cursor-pointer"
               title="Reset years"
             >
               Full range
@@ -84,9 +85,9 @@ export const Filters: React.FC<FiltersProps> = ({
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <div className="flex justify-between text-xs text-stone-500 mb-1">
+              <div className="flex justify-between text-xs text-slate-300 mb-1">
                 <span>Baseline Start Year</span>
-                <span className="font-bold text-stone-800 font-mono">{fromYear}</span>
+                <span className="font-bold text-white font-mono">{fromYear}</span>
               </div>
               <input
                 id="from-year-slider"
@@ -95,13 +96,13 @@ export const Filters: React.FC<FiltersProps> = ({
                 max={toYear}
                 value={fromYear}
                 onChange={(e) => onYearRangeChange(Number(e.target.value), toYear)}
-                className="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-amber-700"
+                className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#e63946]"
               />
             </div>
             <div>
-              <div className="flex justify-between text-xs text-stone-500 mb-1">
+              <div className="flex justify-between text-xs text-slate-300 mb-1">
                 <span>End Comparison Year</span>
-                <span className="font-bold text-stone-800 font-mono">{toYear}</span>
+                <span className="font-bold text-white font-mono">{toYear}</span>
               </div>
               <input
                 id="to-year-slider"
@@ -110,12 +111,12 @@ export const Filters: React.FC<FiltersProps> = ({
                 max={MAX_YEAR}
                 value={toYear}
                 onChange={(e) => onYearRangeChange(fromYear, Number(e.target.value))}
-                className="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-amber-700"
+                className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#e63946]"
               />
             </div>
           </div>
 
-          <div className="flex justify-between text-[11px] text-stone-400 pt-1 font-mono">
+          <div className="flex justify-between text-[11px] text-slate-300 pt-1 font-mono">
             <span>{MIN_YEAR}</span>
             <span>1970</span>
             <span>1980</span>
@@ -125,16 +126,16 @@ export const Filters: React.FC<FiltersProps> = ({
             <span>{MAX_YEAR}</span>
           </div>
         </div>
-      </div>
+      </GlassBox>
 
-      {/* Country Multiselect Section */}
-      <div className="bg-white border border-[#e7e0d3] rounded-2xl p-5 shadow-xs" id="country-filter-card">
+      {/* Country Multiselect Section (overflow-visible so dropdown renders cleanly above lower sections) */}
+      <GlassBox id="country-filter-card" className="overflow-visible! z-20" contentClassName="p-5">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
           <div>
-            <label className="text-sm font-semibold text-stone-800" id="country-select-label">
+            <label className="text-sm font-semibold text-white" id="country-select-label">
               Active Comparison Set ({selectedCountries.length})
             </label>
-            <p className="text-xs text-stone-500">
+            <p className="text-xs text-slate-300">
               Select nations directly below or click their capital city on the central globe.
             </p>
           </div>
@@ -142,7 +143,7 @@ export const Filters: React.FC<FiltersProps> = ({
             <button
               type="button"
               onClick={resetToDefaults}
-              className="inline-flex items-center gap-1 text-xs text-stone-600 hover:text-stone-900 px-2.5 py-1 rounded-lg hover:bg-stone-100 transition-colors"
+              className="inline-flex items-center gap-1 text-xs text-slate-200 hover:text-white px-2.5 py-1 rounded-lg hover:bg-white/15 transition-colors cursor-pointer"
             >
               <RotateCcw className="w-3 h-3" />
               Reset defaults
@@ -151,7 +152,7 @@ export const Filters: React.FC<FiltersProps> = ({
               <button
                 type="button"
                 onClick={() => onSelectedCountriesChange([])}
-                className="text-xs text-stone-500 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors"
+                className="text-xs text-slate-300 hover:text-rose-300 px-2 py-1 rounded-lg hover:bg-white/15 transition-colors cursor-pointer"
               >
                 Clear all
               </button>
@@ -163,7 +164,7 @@ export const Filters: React.FC<FiltersProps> = ({
         <div ref={dropdownRef} className="relative">
           <div
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="min-h-[46px] p-2 bg-[#faf7f2] border border-[#e7e0d3] hover:border-amber-400 focus-within:border-amber-600 rounded-xl cursor-pointer flex flex-wrap items-center gap-1.5 transition-colors"
+            className="min-h-[46px] p-2 bg-black/30 border border-white/20 hover:border-white/40 focus-within:border-amber-300 rounded-xl cursor-pointer flex flex-wrap items-center gap-1.5 transition-colors"
             id="multiselect-input-box"
           >
             {selectedCountries.map((code) => {
@@ -171,18 +172,18 @@ export const Filters: React.FC<FiltersProps> = ({
               return (
                 <span
                   key={code}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium bg-white text-stone-800 px-2.5 py-1 rounded-lg border border-[#ded7cc] shadow-2xs"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium bg-white/15 text-white px-2.5 py-1 rounded-lg border border-white/25"
                 >
-                  <span className="font-bold text-amber-800 font-mono">{code}</span>
+                  <span className="font-bold text-amber-300 font-mono">{code}</span>
                   {country && (
-                    <span className="text-stone-600 max-w-[120px] truncate hidden sm:inline">
+                    <span className="text-slate-200 max-w-[120px] truncate hidden sm:inline">
                       {country.countryName}
                     </span>
                   )}
                   <button
                     type="button"
                     onClick={(e) => removeCountry(code, e)}
-                    className="hover:text-red-600 p-0.5 rounded-full hover:bg-stone-100 transition-colors"
+                    className="hover:text-rose-300 p-0.5 rounded-full hover:bg-white/15 transition-colors cursor-pointer"
                     title={`Remove ${code}`}
                   >
                     <X className="w-3 h-3" />
@@ -191,23 +192,23 @@ export const Filters: React.FC<FiltersProps> = ({
               );
             })}
 
-            <div className="flex-1 min-w-[140px] flex items-center justify-between px-2 text-xs text-stone-500">
+            <div className="flex-1 min-w-[140px] flex items-center justify-between px-2 text-xs text-slate-300">
               <span>{selectedCountries.length === 0 ? 'Click to select countries...' : 'Add more...'}</span>
-              <ChevronDown className={`w-4 h-4 text-stone-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 text-slate-300 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
             </div>
           </div>
 
           {/* Dropdown Menu */}
           {dropdownOpen && (
-            <div className="absolute left-0 right-0 top-full mt-1.5 z-30 bg-white border border-[#e7e0d3] rounded-xl shadow-xl overflow-hidden max-h-72 flex flex-col">
-              <div className="p-2.5 border-b border-[#f0ebe1] flex items-center gap-2 bg-[#faf7f2]">
-                <Search className="w-4 h-4 text-stone-400 shrink-0" />
+            <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-[#0b101d]/95 backdrop-blur-xl border border-white/25 rounded-xl shadow-2xl overflow-hidden max-h-72 flex flex-col">
+              <div className="p-2.5 border-b border-white/15 flex items-center gap-2 bg-black/30">
+                <Search className="w-4 h-4 text-slate-300 shrink-0" />
                 <input
                   type="text"
                   placeholder="Search countries by name or 3-letter code..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-transparent text-xs text-stone-800 placeholder-stone-400 focus:outline-hidden"
+                  className="w-full bg-transparent text-xs text-white placeholder-slate-400 focus:outline-hidden"
                   autoFocus
                   onClick={(e) => e.stopPropagation()}
                 />
@@ -218,16 +219,16 @@ export const Filters: React.FC<FiltersProps> = ({
                       e.stopPropagation();
                       setSearchQuery('');
                     }}
-                    className="text-stone-400 hover:text-stone-700"
+                    className="text-slate-300 hover:text-white"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 )}
               </div>
 
-              <div className="overflow-y-auto p-1 divide-y divide-stone-100">
+              <div className="overflow-y-auto p-1 divide-y divide-white/10">
                 {filteredCountries.length === 0 ? (
-                  <div className="p-4 text-center text-xs text-stone-500">
+                  <div className="p-4 text-center text-xs text-slate-300">
                     No countries matching &quot;{searchQuery}&quot;
                   </div>
                 ) : (
@@ -238,20 +239,20 @@ export const Filters: React.FC<FiltersProps> = ({
                         key={country.countryCode}
                         type="button"
                         onClick={() => toggleCountry(country.countryCode)}
-                        className={`w-full text-left px-3 py-2 text-xs rounded-lg flex items-center justify-between transition-colors ${
+                        className={`w-full text-left px-3 py-2 text-xs rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
                           isSelected
-                            ? 'bg-amber-50 text-amber-900 font-semibold'
-                            : 'text-stone-700 hover:bg-[#faf7f2]'
+                            ? 'bg-[#e63946]/30 text-amber-200 font-semibold'
+                            : 'text-slate-100 hover:bg-white/10'
                         }`}
                       >
                         <div className="flex items-center gap-2.5 truncate">
-                          <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-600">
+                          <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-white/10 text-[#a8dadc]">
                             {country.countryCode}
                           </span>
                           <span className="truncate">{country.countryName}</span>
                         </div>
                         {isSelected && (
-                          <span className="text-[11px] font-bold text-amber-800 shrink-0 ml-2">
+                          <span className="text-[11px] font-bold text-amber-300 shrink-0 ml-2">
                             Selected
                           </span>
                         )}
@@ -263,17 +264,14 @@ export const Filters: React.FC<FiltersProps> = ({
             </div>
           )}
         </div>
-      </div>
+      </GlassBox>
 
       {/* Warning banner when no country is selected */}
       {selectedCountries.length === 0 && (
-        <div
-          id="warning-banner"
-          className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 text-xs font-medium"
-        >
-          <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
+        <GlassBox id="warning-banner" contentClassName="flex-row! items-center gap-3 p-4 text-amber-200 text-xs font-medium">
+          <AlertTriangle className="w-4 h-4 text-amber-300 shrink-0" />
           <span>Select at least one country or click a capital city on the globe.</span>
-        </div>
+        </GlassBox>
       )}
     </div>
   );
