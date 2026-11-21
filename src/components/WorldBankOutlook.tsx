@@ -2,6 +2,20 @@ import React, { useState } from 'react';
 import { WORLD_BANK_FORECASTS } from '../data/worldBankForecasts';
 import { Sparkles, Search } from 'lucide-react';
 import { GlassBox } from './GlassBox';
+import { CountryFlag } from './CountryFlag';
+
+const AGGREGATE_CODE_MAP: Record<string, string> = {
+  'World': 'WLD',
+  'Euro area': 'EMU',
+  'East Asia and Pacific': 'EAS',
+  'Europe and Central Asia': 'ECS',
+  'Latin America and the Caribbean': 'LCN',
+  'Middle East, North Africa, Afghanistan, and Pakistan': 'MEA',
+  'South Asia': 'SAS',
+  'Sub-Saharan Africa': 'SSF',
+  'Advanced economies': 'HIC',
+  'Emerging market and developing economies': 'LMY',
+};
 
 interface WorldBankOutlookProps {
   onSelectCountry?: (countryCode: string) => void;
@@ -112,12 +126,16 @@ export const WorldBankOutlook: React.FC<WorldBankOutlookProps> = ({ onSelectCoun
                     }`}
                   >
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <CountryFlag
+                          code={row.code || AGGREGATE_CODE_MAP[row.name] || 'REG'}
+                          size="sm"
+                        />
                         {row.code && onSelectCountry ? (
                           <button
                             type="button"
                             onClick={() => onSelectCountry(row.code!)}
-                            className="font-bold text-white hover:text-amber-300 text-left hover:underline flex items-center gap-1 cursor-pointer"
+                            className="font-bold text-white hover:text-amber-300 text-left hover:underline flex items-center gap-1.5 cursor-pointer"
                           >
                             <span>{row.name}</span>
                             <span className="text-[10px] font-mono text-[#a8dadc] font-normal">

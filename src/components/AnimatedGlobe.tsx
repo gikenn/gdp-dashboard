@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as am4core from '@amcharts/amcharts4/core';
 import * as am4maps from '@amcharts/amcharts4/maps';
 import am4geodata_worldLow from '@amcharts/amcharts4-geodata/worldLow';
-import am4themes_animated from '@amcharts/amcharts4/themes/animated';
 import { CountryData } from '../types';
 import { COUNTRY_METADATA } from '../data/countryMetadata';
 import { ISO2_TO_ISO3, ISO3_TO_ISO2 } from '../data/isoCodeMap';
@@ -35,6 +34,9 @@ export const AnimatedGlobe: React.FC<AnimatedGlobeProps> = ({
   const polygonSeriesRef = useRef<am4maps.MapPolygonSeries | null>(null);
   const imageSeriesRef = useRef<am4maps.MapImageSeries | null>(null);
   const spinAnimRef = useRef<am4core.Animation | null>(null);
+  const focusAnimRef = useRef<am4core.Animation | null>(null);
+  const chartReadyRef = useRef<boolean>(false);
+  const activeIso2Ref = useRef<string | null>(null);
 
   const prefersReducedMotion =
     typeof window !== 'undefined' &&
@@ -43,6 +45,7 @@ export const AnimatedGlobe: React.FC<AnimatedGlobeProps> = ({
   const [isRotating, setIsRotating] = useState<boolean>(!prefersReducedMotion);
   const isRotatingRef = useRef<boolean>(isRotating);
   const onSelectCountryRef = useRef(onSelectCountry);
+  const targetYearRef = useRef<number>(targetYear);
 
   useEffect(() => {
     isRotatingRef.current = isRotating;
@@ -51,6 +54,10 @@ export const AnimatedGlobe: React.FC<AnimatedGlobeProps> = ({
   useEffect(() => {
     onSelectCountryRef.current = onSelectCountry;
   }, [onSelectCountry]);
+
+  useEffect(() => {
+    targetYearRef.current = targetYear;
+  }, [targetYear]);
 
   // Build quick lookup from ISO-3 code -> CountryData
   const countryByIso3Ref = useRef<Map<string, CountryData>>(new Map());
@@ -62,13 +69,21 @@ export const AnimatedGlobe: React.FC<AnimatedGlobeProps> = ({
     countryByIso3Ref.current = map;
   }, [countries]);
 
-  // Helper to start/restart smooth longitudinal spin animation
-  const startSpinAnimation = (chart: am4maps.MapChart) => {
+  const stopAllAnimations = () => {
     if (spinAnimRef.current) {
       spinAnimRef.current.stop();
       spinAnimRef.current = null;
     }
-    if (!isRotatingRef.current) return;
+    if (focusAnimRef.current) {
+      focusAnimRef.current.stop();
+      focusAnimRef.current = null;
+    }
+  };
+
+  // Single authoritative spin starter (always stops conflicting spin/focus animations first)
+  const startSpinAnimation = (chart: am4maps.MapChart) => {
+    if (chart.isDisposed() || !isRotatingRef.current) return;
+    stopAllAnimations();
 
     const anim = chart.animate(
       { property: 'deltaLongitude', to: chart.deltaLongitude + 360 },
@@ -76,6 +91,9 @@ export const AnimatedGlobe: React.FC<AnimatedGlobeProps> = ({
       am4core.ease.linear
     );
     anim.events.on('animationended', () => {
+      if (spinAnimRef.current === anim) {
+        spinAnimRef.current = null;
+      }
       if (isRotatingRef.current && chartRef.current && !chartRef.current.isDisposed()) {
         startSpinAnimation(chartRef.current);
       }
@@ -83,48 +101,63 @@ export const AnimatedGlobe: React.FC<AnimatedGlobeProps> = ({
     spinAnimRef.current = anim;
   };
 
-  // Initialize amCharts 4 Orthographic Spinning Globe
+  // Initialize amCharts 4 Orthographic Spinning Globe once
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
-    am4core.useTheme(am4themes_animated);
+    chartReadyRef.current = false;
+    activeIso2Ref.current = null;
 
+    // Deliberately avoid global am4themes_animated here so polygons and 216 capital markers
+    // never flash/fade during continuous orthographic rotation or StrictMode remounts.
     const chart = am4core.create(chartContainerRef.current, am4maps.MapChart);
     chartRef.current = chart;
 
-    // Set map definition & Orthographic projection
     chart.geodata = am4geodata_worldLow;
     chart.projection = new am4maps.projections.Orthographic();
     chart.panBehavior = 'rotateLongLat';
     chart.deltaLatitude = -20;
     chart.deltaLongitude = -10;
     chart.padding(20, 20, 20, 20);
+    chart.seriesContainer.draggable = true;
 
-    // Sphere ocean background matching amCharts setup
+    // Sphere ocean background
     chart.backgroundSeries.mapPolygons.template.polygon.fillOpacity = 0.1;
     chart.backgroundSeries.mapPolygons.template.polygon.fill = am4core.color('#ffffff');
 
     // Create map polygon series
     const polygonSeries = chart.series.push(new am4maps.MapPolygonSeries());
     polygonSeries.useGeodata = true;
+    polygonSeries.interpolationDuration = 0;
     polygonSeriesRef.current = polygonSeries;
 
     const polygonTemplate = polygonSeries.mapPolygons.template;
-    polygonTemplate.tooltipText = '{name}';
     polygonTemplate.fill = am4core.color('#FF6633');
     polygonTemplate.stroke = am4core.color('#000033');
     polygonTemplate.strokeWidth = 0.5;
     polygonTemplate.cursorOverStyle = am4core.MouseCursorStyle.pointer;
+    polygonTemplate.defaultState.transitionDuration = 0;
 
-    // Hover state
+    // Dynamic tooltip via adapter so targetYear changes never trigger polygon re-validation
+    polygonTemplate.tooltipText = '{name}';
+    polygonTemplate.adapter.add('tooltipText', (text, target) => {
+      const ctx = target.dataItem?.dataContext as { id?: string; name?: string } | undefined;
+      if (!ctx?.id) return text;
+      const iso3 = ISO2_TO_ISO3[ctx.id];
+      const country = iso3 ? countryByIso3Ref.current.get(iso3) : undefined;
+      if (!country) return text;
+      const yr = targetYearRef.current;
+      return `{name}\nGDP (${yr}): ${formatGdpCompact(country.gdpByYear[yr])}`;
+    });
+
     const hs = polygonTemplate.states.create('hover');
     hs.properties.fill = am4core.color('#cc3d0e');
+    hs.transitionDuration = 120;
 
-    // Active / selected state
     const activeState = polygonTemplate.states.create('active');
     activeState.properties.fill = am4core.color('#fbbf24');
+    activeState.transitionDuration = 120;
 
-    // Clicking a nation opens the sliding rundown panel if present in dataset
     polygonTemplate.events.on('hit', (ev) => {
       const ctx = ev.target.dataItem?.dataContext as { id?: string; name?: string } | undefined;
       if (!ctx) return;
@@ -148,8 +181,9 @@ export const AnimatedGlobe: React.FC<AnimatedGlobeProps> = ({
     graticuleSeries.mapLines.template.line.strokeOpacity = 0.08;
     graticuleSeries.fitExtent = false;
 
-    // Capital cities pin layer (MapImageSeries)
+    // Capital cities pin layer (populated once; tooltip uses dynamic adapter)
     const imageSeries = chart.series.push(new am4maps.MapImageSeries());
+    imageSeries.interpolationDuration = 0;
     imageSeriesRef.current = imageSeries;
 
     const imageTemplate = imageSeries.mapImages.template;
@@ -157,17 +191,29 @@ export const AnimatedGlobe: React.FC<AnimatedGlobeProps> = ({
     imageTemplate.propertyFields.longitude = 'longitude';
     imageTemplate.nonScaling = true;
     imageTemplate.cursorOverStyle = am4core.MouseCursorStyle.pointer;
+    imageTemplate.defaultState.transitionDuration = 0;
 
     const circle = imageTemplate.createChild(am4core.Circle);
-    circle.radius = 4;
+    circle.radius = 3.5;
     circle.fill = am4core.color('#f1faee');
     circle.stroke = am4core.color('#000033');
-    circle.strokeWidth = 1.5;
-    circle.tooltipText = '{capital} · {countryName} ({gdpLabel})';
+    circle.strokeWidth = 1.25;
+    circle.defaultState.transitionDuration = 0;
+    circle.tooltipText = '{capital} · {countryName}';
+    circle.adapter.add('tooltipText', (_text, target) => {
+      const data = target.dataItem?.dataContext as
+        | { code?: string; capital?: string; countryName?: string }
+        | undefined;
+      if (!data?.code) return _text;
+      const yr = targetYearRef.current;
+      const gdpVal = countryByIso3Ref.current.get(data.code)?.gdpByYear[yr] ?? null;
+      return `${data.capital} · ${data.countryName} (${formatGdpCompact(gdpVal)})`;
+    });
 
     const circleHover = circle.states.create('hover');
     circleHover.properties.scale = 1.6;
     circleHover.properties.fill = am4core.color('#fde047');
+    circleHover.transitionDuration = 100;
 
     imageTemplate.events.on('hit', (ev) => {
       const data = ev.target.dataItem?.dataContext as { code?: string } | undefined;
@@ -176,12 +222,17 @@ export const AnimatedGlobe: React.FC<AnimatedGlobeProps> = ({
       }
     });
 
+    imageSeries.data = Object.values(COUNTRY_METADATA).map((meta) => ({
+      code: meta.code,
+      capital: meta.capital,
+      countryName: meta.countryName,
+      latitude: meta.lat,
+      longitude: meta.lng,
+    }));
+
     // Pause spin while user drags the globe, resume smoothly on release if spinning
     chart.seriesContainer.events.on('down', () => {
-      if (spinAnimRef.current) {
-        spinAnimRef.current.stop();
-        spinAnimRef.current = null;
-      }
+      stopAllAnimations();
     });
     chart.seriesContainer.events.on('up', () => {
       if (isRotatingRef.current && !chart.isDisposed()) {
@@ -189,19 +240,17 @@ export const AnimatedGlobe: React.FC<AnimatedGlobeProps> = ({
       }
     });
 
-    // Start spinning after brief settle
-    const timer = window.setTimeout(() => {
+    // Start spin exactly once after geodata finishes validating (no competing timers)
+    polygonSeries.events.once('datavalidated', () => {
+      chartReadyRef.current = true;
       if (isRotatingRef.current && !chart.isDisposed()) {
         startSpinAnimation(chart);
       }
-    }, 600);
+    });
 
     return () => {
-      window.clearTimeout(timer);
-      if (spinAnimRef.current) {
-        spinAnimRef.current.stop();
-        spinAnimRef.current = null;
-      }
+      chartReadyRef.current = false;
+      stopAllAnimations();
       chart.dispose();
       chartRef.current = null;
       polygonSeriesRef.current = null;
@@ -209,66 +258,15 @@ export const AnimatedGlobe: React.FC<AnimatedGlobeProps> = ({
     };
   }, []);
 
-  // Sync capital city markers and polygon tooltips whenever countries or targetYear updates
-  useEffect(() => {
-    const imageSeries = imageSeriesRef.current;
-    const polygonSeries = polygonSeriesRef.current;
-    if (!imageSeries || !polygonSeries) return;
-
-    const capitalData = Object.values(COUNTRY_METADATA).map((meta) => {
-      const country = countryByIso3Ref.current.get(meta.code);
-      const gdpVal = country?.gdpByYear[targetYear] ?? null;
-      return {
-        code: meta.code,
-        capital: meta.capital,
-        countryName: meta.countryName,
-        latitude: meta.lat,
-        longitude: meta.lng,
-        gdpLabel: formatGdpCompact(gdpVal),
-      };
-    });
-
-    imageSeries.data = capitalData;
-
-    // Update polygon tooltips dynamically with GDP for targetYear
-    polygonSeries.events.once('datavalidated', () => {
-      polygonSeries.mapPolygons.each((poly) => {
-        const ctx = poly.dataItem?.dataContext as { id?: string; name?: string } | undefined;
-        if (!ctx?.id) return;
-        const iso3 = ISO2_TO_ISO3[ctx.id];
-        const country = iso3 ? countryByIso3Ref.current.get(iso3) : undefined;
-        if (country) {
-          const gdp = country.gdpByYear[targetYear];
-          poly.tooltipText = `{name}\nGDP (${targetYear}): ${formatGdpCompact(gdp)}`;
-        } else {
-          poly.tooltipText = '{name}';
-        }
-      });
-    });
-
-    // Also update already-validated polygons immediately
-    polygonSeries.mapPolygons.each((poly) => {
-      const ctx = poly.dataItem?.dataContext as { id?: string; name?: string } | undefined;
-      if (!ctx?.id) return;
-      const iso3 = ISO2_TO_ISO3[ctx.id];
-      const country = iso3 ? countryByIso3Ref.current.get(iso3) : undefined;
-      if (country) {
-        const gdp = country.gdpByYear[targetYear];
-        poly.tooltipText = `{name}\nGDP (${targetYear}): ${formatGdpCompact(gdp)}`;
-      }
-    });
-  }, [countries, targetYear]);
-
-  // Toggle spinning state via Play/Pause button
+  // Toggle spinning state via Play/Pause button (wait until datavalidated on initial mount)
   useEffect(() => {
     const chart = chartRef.current;
-    if (!chart || chart.isDisposed()) return;
+    if (!chart || chart.isDisposed() || !chartReadyRef.current) return;
 
     if (isRotating) {
       startSpinAnimation(chart);
-    } else if (spinAnimRef.current) {
-      spinAnimRef.current.stop();
-      spinAnimRef.current = null;
+    } else {
+      stopAllAnimations();
     }
   }, [isRotating]);
 
@@ -278,29 +276,36 @@ export const AnimatedGlobe: React.FC<AnimatedGlobeProps> = ({
     const polygonSeries = polygonSeriesRef.current;
     if (!chart || chart.isDisposed() || !polygonSeries) return;
 
-    const targetIso2 = selectedCountryCode ? ISO3_TO_ISO2[selectedCountryCode] : null;
-    polygonSeries.mapPolygons.each((poly) => {
-      const ctx = poly.dataItem?.dataContext as { id?: string } | undefined;
-      poly.isActive = Boolean(targetIso2 && ctx?.id === targetIso2);
-    });
+    const targetIso2 = selectedCountryCode ? ISO3_TO_ISO2[selectedCountryCode] ?? null : null;
+    if (activeIso2Ref.current !== targetIso2) {
+      polygonSeries.mapPolygons.each((poly) => {
+        const ctx = poly.dataItem?.dataContext as { id?: string } | undefined;
+        const shouldBeActive = Boolean(targetIso2 && ctx?.id === targetIso2);
+        if (poly.isActive !== shouldBeActive) {
+          poly.isActive = shouldBeActive;
+        }
+      });
+      activeIso2Ref.current = targetIso2;
+    }
 
     if (selectedCountryCode && COUNTRY_METADATA[selectedCountryCode]) {
       const meta = COUNTRY_METADATA[selectedCountryCode];
-      if (spinAnimRef.current) {
-        spinAnimRef.current.stop();
-        spinAnimRef.current = null;
-      }
+      stopAllAnimations();
 
       const focusAnim = chart.animate(
         [
           { property: 'deltaLongitude', to: -meta.lng },
           { property: 'deltaLatitude', to: -meta.lat },
         ],
-        900,
+        850,
         am4core.ease.cubicOut
       );
+      focusAnimRef.current = focusAnim;
 
       focusAnim.events.on('animationended', () => {
+        if (focusAnimRef.current === focusAnim) {
+          focusAnimRef.current = null;
+        }
         if (isRotatingRef.current && !chart.isDisposed()) {
           startSpinAnimation(chart);
         }
@@ -312,10 +317,7 @@ export const AnimatedGlobe: React.FC<AnimatedGlobeProps> = ({
     const chart = chartRef.current;
     if (!chart || chart.isDisposed()) return;
 
-    if (spinAnimRef.current) {
-      spinAnimRef.current.stop();
-      spinAnimRef.current = null;
-    }
+    stopAllAnimations();
 
     const anim = chart.animate(
       [
@@ -325,8 +327,12 @@ export const AnimatedGlobe: React.FC<AnimatedGlobeProps> = ({
       850,
       am4core.ease.cubicOut
     );
+    focusAnimRef.current = anim;
 
     anim.events.on('animationended', () => {
+      if (focusAnimRef.current === anim) {
+        focusAnimRef.current = null;
+      }
       if (isRotatingRef.current && !chart.isDisposed()) {
         startSpinAnimation(chart);
       }
@@ -335,18 +341,22 @@ export const AnimatedGlobe: React.FC<AnimatedGlobeProps> = ({
 
   return (
     <div className="flex flex-col items-center justify-center relative w-full" id="animated-globe-wrapper">
-      {/* amCharts 4 Orthographic Globe Container */}
-      <div className="w-full rounded-2xl overflow-hidden border border-[#1d3557]/30 shadow-md bg-[#000033] my-2">
+      {/* amCharts 4 Orthographic Globe Container (GPU-isolated to prevent backdrop compositor flicker) */}
+      <div className="w-full rounded-2xl overflow-hidden border border-[#1d3557]/30 shadow-md bg-[#000033] my-2 isolate transform-gpu">
         <div
           id="chartdiv"
           ref={chartContainerRef}
-          className="w-full h-[380px] sm:h-[460px] max-w-full"
+          className="w-full h-[380px] sm:h-[460px] max-w-full transform-gpu"
           style={{ backgroundColor: '#000033' }}
         />
       </div>
 
       {/* Globe Interaction Bar */}
-      <GlassBox className="mt-2 w-full" contentClassName="flex-row! flex-wrap items-center justify-center gap-2 text-xs text-slate-200 px-4 py-2.5">
+      <GlassBox
+        disableLensFilter
+        className="mt-2 w-full"
+        contentClassName="flex-row! flex-wrap items-center justify-center gap-2 text-xs text-slate-200 px-4 py-2.5"
+      >
         <button
           type="button"
           onClick={() => setIsRotating(!isRotating)}

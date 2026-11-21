@@ -3,6 +3,7 @@ import { CountryData } from '../types';
 import { MIN_YEAR, MAX_YEAR, DEFAULT_SELECTED_COUNTRIES } from '../data/gdpService';
 import { AlertTriangle, ChevronDown, X, Search, RotateCcw } from 'lucide-react';
 import { GlassBox } from './GlassBox';
+import { CountryFlag } from './CountryFlag';
 
 interface FiltersProps {
   allCountries: CountryData[];
@@ -174,6 +175,7 @@ export const Filters: React.FC<FiltersProps> = ({
                   key={code}
                   className="inline-flex items-center gap-1.5 text-xs font-medium bg-white/15 text-white px-2.5 py-1 rounded-lg border border-white/25"
                 >
+                  <CountryFlag code={code} size="xs" />
                   <span className="font-bold text-amber-300 font-mono">{code}</span>
                   {country && (
                     <span className="text-slate-200 max-w-[120px] truncate hidden sm:inline">
@@ -246,6 +248,7 @@ export const Filters: React.FC<FiltersProps> = ({
                         }`}
                       >
                         <div className="flex items-center gap-2.5 truncate">
+                          <CountryFlag code={country.countryCode} size="sm" />
                           <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-white/10 text-[#a8dadc]">
                             {country.countryCode}
                           </span>

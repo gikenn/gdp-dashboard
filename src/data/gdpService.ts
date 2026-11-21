@@ -8,6 +8,21 @@ export const MIN_YEAR = 1960;
 export const MAX_YEAR = 2022;
 export const DEFAULT_SELECTED_COUNTRIES = ['USA', 'CHN', 'JPN', 'DEU', 'IND', 'GBR'];
 
+// Official World Bank Data360 (WB_WDI_NY_GDP_MKTP_CD) values for Germany 1960–1969
+// where the bundled historical CSV starts at 1970
+const GERMANY_WDI_EARLY_GDP: Record<number, number> = {
+  1960: 84619845881.26076,
+  1961: 96558204043.10281,
+  1962: 105895435234.34286,
+  1963: 112232503744.0996,
+  1964: 123330404665.08583,
+  1965: 134774688191.16107,
+  1966: 143304275683.9795,
+  1967: 145100667772.6901,
+  1968: 156527292653.157,
+  1969: 177733486326.06015,
+};
+
 let cachedCountries: CountryData[] | null = null;
 
 export function loadGdpData(): CountryData[] {
@@ -38,6 +53,10 @@ export function loadGdpData(): CountryData[] {
       } else {
         gdpByYear[year] = null;
       }
+
+      if (countryCode === 'DEU' && gdpByYear[year] == null && GERMANY_WDI_EARLY_GDP[year] != null) {
+        gdpByYear[year] = GERMANY_WDI_EARLY_GDP[year];
+      }
     }
 
     countries.push({
@@ -65,13 +84,22 @@ export function getChartData(
 
   const result: Array<Record<string, number | null>> = [];
 
-  // Determine baseline GDP at fromYear for each selected country if mode is 'growth'
+  // Determine baseline GDP at fromYear (or earliest available year in range) if mode is 'growth'
   const baselines = new Map<string, number | null>();
   if (mode === 'growth') {
     for (const code of selectedCountries) {
       const country = countryMap.get(code);
-      const baseVal = country?.gdpByYear[fromYear] ?? null;
-      baselines.set(code, baseVal != null && baseVal > 0 ? baseVal : null);
+      let baseVal: number | null = null;
+      if (country) {
+        for (let y = fromYear; y <= toYear; y++) {
+          const candidate = country.gdpByYear[y];
+          if (candidate != null && candidate > 0) {
+            baseVal = candidate;
+            break;
+          }
+        }
+      }
+      baselines.set(code, baseVal);
     }
   }
 
@@ -118,7 +146,18 @@ export function computeMetrics(
     const country = countryMap.get(code);
     const countryName = country ? country.countryName : code;
 
-    const rawFirstGdp = country?.gdpByYear[fromYear];
+    let effectiveFromYear = fromYear;
+    let rawFirstGdp = country?.gdpByYear[fromYear] ?? null;
+    if ((rawFirstGdp == null || rawFirstGdp <= 0) && country) {
+      for (let yr = fromYear; yr <= toYear; yr++) {
+        const candidate = country.gdpByYear[yr];
+        if (candidate != null && candidate > 0) {
+          rawFirstGdp = candidate;
+          effectiveFromYear = yr;
+          break;
+        }
+      }
+    }
     const rawLastGdp = country?.gdpByYear[toYear];
 
     const firstGdp = rawFirstGdp != null ? rawFirstGdp / 1e9 : null;
@@ -140,6 +179,7 @@ export function computeMetrics(
       countryName,
       firstGdp,
       lastGdp,
+      effectiveFromYear,
       growth,
       growthPct,
       deltaColor,
@@ -199,14 +239,38 @@ export function getCountryRundown(
 
   const overview = getWorldOverview();
   const meta = COUNTRY_METADATA[countryCode];
-  const latestGdp = country.gdpByYear[2022] ?? country.gdpByYear[toYear] ?? null;
-  const startYearGdp = country.gdpByYear[fromYear] ?? null;
+
+  let effectiveEndYear = toYear;
+  let latestGdp = country.gdpByYear[toYear] ?? country.gdpByYear[2022] ?? null;
+  if (latestGdp == null) {
+    for (let yr = toYear; yr >= fromYear; yr--) {
+      const candidate = country.gdpByYear[yr];
+      if (candidate != null && candidate > 0) {
+        latestGdp = candidate;
+        effectiveEndYear = yr;
+        break;
+      }
+    }
+  }
+
+  let effectiveStartYear = fromYear;
+  let startYearGdp = country.gdpByYear[fromYear] ?? null;
+  if (startYearGdp == null || startYearGdp <= 0) {
+    for (let yr = fromYear; yr <= effectiveEndYear; yr++) {
+      const candidate = country.gdpByYear[yr];
+      if (candidate != null && candidate > 0) {
+        startYearGdp = candidate;
+        effectiveStartYear = yr;
+        break;
+      }
+    }
+  }
 
   // Global ranking in 2022 among countries
   const ranked = allCountries
     .filter((c) => Boolean(COUNTRY_METADATA[c.countryCode]) && (c.gdpByYear[2022] ?? 0) > 0)
     .sort((a, b) => (b.gdpByYear[2022] ?? 0) - (a.gdpByYear[2022] ?? 0));
-  
+
   const rankIndex = ranked.findIndex((c) => c.countryCode === countryCode);
   const rank2022 = rankIndex >= 0 ? rankIndex + 1 : 999;
   const shareOfWorld2022 = latestGdp ? (latestGdp / overview.worldTotal2022) * 100 : 0;
@@ -226,7 +290,7 @@ export function getCountryRundown(
   let cagr: number | null = null;
   if (startYearGdp && latestGdp && startYearGdp > 0) {
     growthMultiple = latestGdp / startYearGdp;
-    const years = toYear - fromYear;
+    const years = effectiveEndYear - effectiveStartYear;
     if (years > 0) {
       cagr = (Math.pow(latestGdp / startYearGdp, 1 / years) - 1) * 100;
     }
@@ -241,6 +305,7 @@ export function getCountryRundown(
     rank2022,
     shareOfWorld2022,
     startYearGdp,
+    effectiveStartYear,
     peakGdp: peakVal > 0 ? { year: peakYr, value: peakVal } : null,
     cagr,
     growthMultiple,

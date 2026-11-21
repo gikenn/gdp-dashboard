@@ -2,6 +2,7 @@ import React from 'react';
 import { WorldGdpOverview } from '../types';
 import { Globe2, Crown, ArrowUpRight, TrendingUp, Sparkles } from 'lucide-react';
 import { GlassBox } from './GlassBox';
+import { CountryFlag } from './CountryFlag';
 
 interface WorldSummaryHeroProps {
   overview: WorldGdpOverview;
@@ -85,7 +86,8 @@ export const WorldSummaryHero: React.FC<WorldSummaryHeroProps> = ({
                       : 'bg-white/10 hover:bg-white/20 text-white border-white/15 hover:border-white/35'
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 truncate">
+                  <div className="flex items-center gap-2 truncate">
+                    <CountryFlag code={item.code} size="sm" />
                     <span className="font-mono font-bold text-[11px] px-1.5 py-0.5 rounded bg-black/30 text-[#a8dadc]">
                       {item.code}
                     </span>
@@ -110,7 +112,12 @@ export const WorldSummaryHero: React.FC<WorldSummaryHeroProps> = ({
 
       {/* Center Column: Animated Globe (The Visual Centerpiece) */}
       <div className="lg:col-span-6 flex flex-col items-center justify-center order-1 lg:order-2">
-        <GlassBox rounded className="w-full" contentClassName="p-4 sm:p-6 items-center relative">
+        <GlassBox
+          rounded
+          disableLensFilter
+          className="w-full"
+          contentClassName="p-4 sm:p-6 items-center relative"
+        >
           <div className="text-center mb-1">
             <p className="text-xs font-semibold tracking-wide text-[#a8dadc]">
               Interactive Global GDP Navigator
@@ -168,7 +175,7 @@ export const WorldSummaryHero: React.FC<WorldSummaryHeroProps> = ({
                       <span className="text-xs font-bold text-slate-300 font-mono w-4">
                         #{idx + 1}
                       </span>
-                      <span className="text-base">{holder.flag || '🏳️'}</span>
+                      <CountryFlag code={holder.countryCode} size="md" />
                       <div className="truncate">
                         <div className="text-xs font-bold text-white truncate">
                           {holder.countryName}

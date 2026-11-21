@@ -1,8 +1,8 @@
 import React from 'react';
 import { MetricData } from '../types';
 import { ArrowUpRight, Minus, ExternalLink } from 'lucide-react';
-import { COUNTRY_METADATA } from '../data/countryMetadata';
 import { GlassBox } from './GlassBox';
+import { CountryFlag } from './CountryFlag';
 
 interface MetricCardsProps {
   metrics: MetricData[];
@@ -42,7 +42,6 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
               : 'n/a';
 
           const isPositive = m.deltaColor === 'normal';
-          const meta = COUNTRY_METADATA[m.countryCode];
 
           return (
             <GlassBox
@@ -53,9 +52,9 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
               contentClassName="p-4 justify-between"
             >
               <div>
-                <div className="flex items-center justify-between text-xs text-slate-300 mb-1 font-medium">
-                  <div className="flex items-center gap-1.5">
-                    <span>{meta?.flag || '🏳️'}</span>
+                <div className="flex items-center justify-between text-xs text-slate-300 mb-1.5 font-medium">
+                  <div className="flex items-center gap-2">
+                    <CountryFlag code={m.countryCode} size="sm" />
                     <span className="font-bold text-white font-mono">{m.countryCode}</span>
                   </div>
                   <ExternalLink className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -80,7 +79,9 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
                     {m.growth}
                   </span>
                 )}
-                <span className="text-[10px] text-slate-300">vs {fromYear}</span>
+                <span className="text-[10px] text-slate-300">
+                  vs {m.effectiveFromYear ?? fromYear}
+                </span>
               </div>
             </GlassBox>
           );

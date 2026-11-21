@@ -3,6 +3,7 @@ import React from 'react';
 interface GlassBoxProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   rounded?: boolean;
+  disableLensFilter?: boolean;
   className?: string;
   contentClassName?: string;
 }
@@ -10,16 +11,20 @@ interface GlassBoxProps extends React.HTMLAttributes<HTMLDivElement> {
 export const GlassBox: React.FC<GlassBoxProps> = ({
   children,
   rounded = false,
+  disableLensFilter = false,
   className = '',
   contentClassName = '',
   ...rest
 }) => {
   return (
     <div
-      className={`glass-container ${rounded ? 'glass-container--rounded' : ''} ${className}`}
+      className={`glass-container isolate ${rounded ? 'glass-container--rounded' : ''} ${className}`}
       {...rest}
     >
-      <div className="glass-filter" aria-hidden="true" />
+      <div
+        className={`glass-filter ${disableLensFilter ? 'glass-filter--no-lens' : ''}`}
+        aria-hidden="true"
+      />
       <div className="glass-overlay" aria-hidden="true" />
       <div className="glass-specular" aria-hidden="true" />
       <div className={`glass-content ${contentClassName}`}>{children}</div>
